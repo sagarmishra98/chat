@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ephemeral Chat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div id="join-container">
+            <h2 class="neon-text">Ephemeral Chat</h2>
+            <input type="text" id="room" placeholder="Enter Room Name" />
+            <input type="text" id="guestName" placeholder="Enter Your Name" />
+            <!-- Move the button below the inputs -->
+            <button id="joinRoom" class="button-animate" style="margin-top: 10px;">Join Room</button>
+        </div>
+
+        <div id="chat" style="display: none;">
+            <h3 class="neon-text-small">Chat Room</h3>
+            <div id="message-box" class="chat-container">
+                <ul id="messages"></ul>
+            </div>
+            <div id="message-input-container">
+                <input type="text" id="messageInput" class="input-animate" placeholder="Type a message..." />
+                <button id="sendMessage" class="button-animate">Send</button>
+                <button id="clearMessages" class="button-animate">Clear</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        const socket = io();
+
+        document.getElementById('joinRoom').onclick = () => {
+            joinRoom();
+        };
+
+        // Join room function
+        function joinRoom() {
+            const room = document.getElementById('room').value;
+            const guestName = document.getElementById('guestName').value;
+
+            if (room && guestName) {
+                socket.emit('joinRoom', { room, guestName });
+                document.getElementById('join-container').style.display = 'none';
+                document.getElementById('chat').style.display = 'block';
+            }
+        }
+
+        // Listen for Enter key to join the room
+        document.getElementById('room').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                joinRoom();
+            }
+        });
+
+        document.getElementById('sendMessage').onclick = () => {
+            sendMessage();
+        };
+
+        // Send message function
+        function sendMessage() {
+            const room = document.getElementById('room').value;
+            const guestName = document.getElementById('guestName').value;
+            const message = document.getElementById('messageInput').value;
+
+            if (room && guestName && message) {
+                socket.emit('chatMessage', { room, guestName, message });
+                document.getElementById('messageInput').value = '';
+            }
+        }
+
+        // Listen for Enter key to send the message
+        document.getElementById('messageInput').addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        socket.on('chatMessage', (data) => {
+            const li = document.createElement('li');
+            li.textContent = `${data.guestName}: ${data.message}`;
+            li.classList.add('message-animate');
+            document.getElementById('messages').appendChild(li);
+            document.getElementById('message-box').scrollTop = document.getElementById('message-box').scrollHeight;
+        });
+
+        // Clear messages function
+        document.getElementById('clearMessages').onclick = () => {
+            const room = document.getElementById('room').value;
+            socket.emit('clearMessages', room);
+        };
+
+        // Listen for clearing messages
+        socket.on('clearMessages', () => {
+            document.getElementById('messages').innerHTML = '';
+        });
+    </script>
+</body>
+
+</html>
